@@ -30,7 +30,7 @@ var (
 	}
 )
 
-func (p Piece) ImageData() []byte {
+func (p Piece) imageData() []byte {
 	if p.color == Red {
 		switch p.role {
 		case RoleRook:
@@ -78,7 +78,7 @@ func (p Piece) ImageData() []byte {
 
 func initializePieceImageMap() error {
 	for p, _ := range pieceImageMap {
-		rawImg, _, err := image.Decode(bytes.NewReader(p.ImageData()))
+		rawImg, _, err := image.Decode(bytes.NewReader(p.imageData()))
 		if err != nil {
 			return fmt.Errorf("error loading piece (%v): %w", p, err)
 		}
