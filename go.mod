@@ -1,6 +1,8 @@
 module github.com/ahrtr/chess
 
-go 1.23.2
+go 1.23
+
+toolchain go1.23.4
 
 require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
