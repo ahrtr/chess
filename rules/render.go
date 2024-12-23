@@ -9,12 +9,17 @@ import (
 )
 
 const (
+	WindowsWidth  = 640
+	WindowsHeight = 840
+
 	leftMargin = 40
 	topMargin  = 60
 
 	borderLineWidth = 2.0
 	innerLineWidth  = 1.0
 )
+
+var boardBackgroundColor = color.RGBA{R: 0xbb, G: 0xad, B: 0xa0, A: 0xff}
 
 // Board has 10 rows, and 9 columns.
 type Board [10][9]*Piece
@@ -172,6 +177,8 @@ func initializeBoard(selfRole PieceColor) *Board {
 }
 
 func DrawBoard(screen *ebiten.Image) {
+	screen.Fill(boardBackgroundColor)
+
 	bounds := screen.Bounds()
 
 	var (

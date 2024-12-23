@@ -1,14 +1,11 @@
 package main
 
 import (
-	"image/color"
 	"log"
 
 	"github.com/ahrtr/chess/rules"
 	"github.com/hajimehoshi/ebiten/v2"
 )
-
-var backgroundColor = color.RGBA{0xbb, 0xad, 0xa0, 0xff}
 
 var chessBoard *rules.Board
 
@@ -19,7 +16,6 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Fill(backgroundColor)
 	rules.DrawBoard(screen)
 	rules.DrawPieces(screen, chessBoard)
 
@@ -41,7 +37,7 @@ func main() {
 	}
 
 	game := &Game{}
-	ebiten.SetWindowSize(640, 840)
+	ebiten.SetWindowSize(rules.WindowsWidth, rules.WindowsHeight)
 	ebiten.SetWindowTitle("中国象棋")
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
