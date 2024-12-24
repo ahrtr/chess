@@ -15,6 +15,7 @@ type Board struct {
 	// Is the MouseButtonLeft pressed?
 	mouseDown bool
 	// The point clicked by mouse
+	// Note the point.X is the row number (0-9), and point.Y is the column number (0-8).
 	targetPt *image.Point
 	// The piece on the selected point should be displayed in dash circle.
 	selectedFromPoint *image.Point
@@ -205,13 +206,16 @@ func (b *Board) Update() {
 			p := b.pieceMatrix[b.targetPt.X][b.targetPt.Y]
 			if p == nil {
 				if b.selectedFromPoint != nil {
-					// TODO: check whether it's a valid move
-					b.pieceMatrix[b.targetPt.X][b.targetPt.Y] = b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
-					b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y] = nil
-					b.selectedFromPoint = nil
+					selectedPiece := b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
+					// check whether it's a valid move.
+					if selectedPiece.canMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
+						b.pieceMatrix[b.targetPt.X][b.targetPt.Y] = b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
+						b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y] = nil
 
-					b.isRedTurn = !b.isRedTurn
-					b.startTime = time.Now()
+						b.isRedTurn = !b.isRedTurn
+						b.startTime = time.Now()
+					}
+					b.selectedFromPoint = nil
 				}
 			} else {
 				if b.selectedFromPoint == nil {
@@ -222,12 +226,15 @@ func (b *Board) Update() {
 				} else {
 					// You can't capture a piece of the same color.
 					if (p.color == Red) != b.isRedTurn {
-						// TODO: check whether it's a valid capture
-						b.pieceMatrix[b.targetPt.X][b.targetPt.Y] = b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
-						b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y] = nil
+						// check whether it's a valid capture.
+						selectedPiece := b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
+						if selectedPiece.canMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
+							b.pieceMatrix[b.targetPt.X][b.targetPt.Y] = b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
+							b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y] = nil
 
-						b.isRedTurn = !b.isRedTurn
-						b.startTime = time.Now()
+							b.isRedTurn = !b.isRedTurn
+							b.startTime = time.Now()
+						}
 					}
 					b.selectedFromPoint = nil
 				}
@@ -255,9 +262,4 @@ func (b *Board) findTargetPoint(pt image.Point) *image.Point {
 	}
 
 	return nil
-}
-
-func isPointInsideRect(pt image.Point, rect image.Rectangle) bool {
-	return rect.Min.X <= pt.X && pt.X <= rect.Max.X &&
-		rect.Min.Y <= pt.Y && pt.Y <= rect.Max.Y
 }
