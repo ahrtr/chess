@@ -31,7 +31,7 @@ func (p Piece) imageData(isDash bool) []byte {
 	return pieceSolidImageDataMap[p]
 }
 
-func (p Piece) CanMove(toX, toY int) bool {
+func (p Piece) canMove(fromX, fromY, toX, toY int, b *Board) bool {
 
 	switch p.role {
 	case RoleKing:

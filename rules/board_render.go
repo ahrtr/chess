@@ -40,6 +40,12 @@ func init() {
 	textFaceSource = s
 }
 
+func (b *Board) Draw(screen *ebiten.Image) {
+	drawBoard(screen)
+	b.drawPieces(screen)
+	b.drawTimer(screen)
+}
+
 func drawBoard(screen *ebiten.Image) {
 	screen.Fill(boardBackgroundColor)
 
