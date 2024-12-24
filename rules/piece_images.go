@@ -90,3 +90,10 @@ func initializePieceImageMap() error {
 
 	return nil
 }
+
+func (p Piece) imageData(isDash bool) []byte {
+	if isDash {
+		return pieceDashImageDataMap[p]
+	}
+	return pieceSolidImageDataMap[p]
+}
