@@ -24,6 +24,13 @@ type Piece struct {
 	role  PieceRole
 }
 
+func (p Piece) imageData(isDash bool) []byte {
+	if isDash {
+		return pieceDashImageDataMap[p]
+	}
+	return pieceSolidImageDataMap[p]
+}
+
 func (p Piece) CanMove(toX, toY int) bool {
 
 	switch p.role {

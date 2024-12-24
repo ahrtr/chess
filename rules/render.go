@@ -1,11 +1,17 @@
 package rules
 
 import (
+	"bytes"
+	"fmt"
 	"image"
 	"image/color"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"github.com/ahrtr/chess/fonts"
 )
 
 const (
@@ -17,166 +23,24 @@ const (
 
 	borderLineWidth = 2.0
 	innerLineWidth  = 1.0
+
+	timerFontSize = 16
 )
 
-var boardBackgroundColor = color.RGBA{R: 0xbb, G: 0xad, B: 0xa0, A: 0xff}
+var (
+	boardBackgroundColor = color.RGBA{R: 0xbb, G: 0xad, B: 0xa0, A: 0xff}
+	textFaceSource       *text.GoTextFaceSource
+)
 
-// Board has 10 rows, and 9 columns.
-type Board [10][9]*Piece
-
-func Initialize(selfRole PieceColor) (*Board, error) {
-	if err := initializePieceImageMap(); err != nil {
-		return nil, err
+func init() {
+	s, err := text.NewGoTextFaceSource(bytes.NewReader(fonts.RegularFont))
+	if err != nil {
+		panic(fmt.Sprintf("error loading font: %v", err))
 	}
-
-	return initializeBoard(selfRole), nil
+	textFaceSource = s
 }
 
-func initializeBoard(selfRole PieceColor) *Board {
-	// Self is red.
-	// Black pieces are on top and red pieces are at the bottom area.
-	if selfRole == Red {
-		return &Board{
-			// Black pieces (rows 0~4, top-->down)
-			{
-				{Black, RoleRook},
-				{Black, RoleHorse},
-				{Black, RoleBishop},
-				{Black, RoleGuard},
-				{Black, RoleKing},
-				{Black, RoleGuard},
-				{Black, RoleBishop},
-				{Black, RoleHorse},
-				{Black, RoleRook},
-			},
-			{
-				nil, nil, nil, nil, nil, nil, nil, nil, nil,
-			},
-			{
-				nil, {Black, RoleCannon}, nil, nil, nil, nil, nil, {Black, RoleCannon}, nil,
-			},
-			{
-				{Black, RoleSolder},
-				nil,
-				{Black, RoleSolder},
-				nil,
-				{Black, RoleSolder},
-				nil,
-				{Black, RoleSolder},
-				nil,
-				{Black, RoleSolder},
-			},
-			{
-				nil, nil, nil, nil, nil, nil, nil, nil, nil,
-			},
-
-			// Red pieces (rows 5~9, top-->down)
-			{
-				nil, nil, nil, nil, nil, nil, nil, nil, nil,
-			},
-			{
-				{Red, RoleSolder},
-				nil,
-				{Red, RoleSolder},
-				nil,
-				{Red, RoleSolder},
-				nil,
-				{Red, RoleSolder},
-				nil,
-				{Red, RoleSolder},
-			},
-			{
-				nil, {Red, RoleCannon}, nil, nil, nil, nil, nil, {Red, RoleCannon}, nil,
-			},
-			{
-				nil, nil, nil, nil, nil, nil, nil, nil, nil,
-			},
-			{
-				{Red, RoleRook},
-				{Red, RoleHorse},
-				{Red, RoleBishop},
-				{Red, RoleGuard},
-				{Red, RoleKing},
-				{Red, RoleGuard},
-				{Red, RoleBishop},
-				{Red, RoleHorse},
-				{Red, RoleRook},
-			},
-		}
-	}
-
-	// Self is black.
-	// Red pieces are on top and black pieces are at the bottom area.
-	return &Board{
-		// Red pieces (rows 0~4, top-->down)
-		{
-			{Red, RoleRook},
-			{Red, RoleHorse},
-			{Red, RoleBishop},
-			{Red, RoleGuard},
-			{Red, RoleKing},
-			{Red, RoleGuard},
-			{Red, RoleBishop},
-			{Red, RoleHorse},
-			{Red, RoleRook},
-		},
-		{
-			nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		},
-		{
-			nil, {Red, RoleCannon}, nil, nil, nil, nil, nil, {Red, RoleCannon}, nil,
-		},
-		{
-			{Red, RoleSolder},
-			nil,
-			{Red, RoleSolder},
-			nil,
-			{Red, RoleSolder},
-			nil,
-			{Red, RoleSolder},
-			nil,
-			{Red, RoleSolder},
-		},
-		{
-			nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		},
-
-		// Black pieces (rows 5~9, top-->down)
-		{
-			nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		},
-		{
-			{Black, RoleSolder},
-			nil,
-			{Black, RoleSolder},
-			nil,
-			{Black, RoleSolder},
-			nil,
-			{Black, RoleSolder},
-			nil,
-			{Black, RoleSolder},
-		},
-		{
-			nil, {Black, RoleCannon}, nil, nil, nil, nil, nil, {Black, RoleCannon}, nil,
-		},
-		{
-			nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		},
-		{
-			{Black, RoleRook},
-			{Black, RoleHorse},
-			{Black, RoleBishop},
-			{Black, RoleGuard},
-			{Black, RoleKing},
-			{Black, RoleGuard},
-			{Black, RoleBishop},
-			{Black, RoleHorse},
-			{Black, RoleRook},
-		},
-	}
-}
-
-func DrawBoard(screen *ebiten.Image) {
+func drawBoard(screen *ebiten.Image) {
 	screen.Fill(boardBackgroundColor)
 
 	bounds := screen.Bounds()
@@ -219,9 +83,17 @@ func DrawBoard(screen *ebiten.Image) {
 	for i := 1; i <= 7; i++ {
 		vector.StrokeLine(screen, float32(minPoint.X+widthStep*i), float32(minPoint.Y+heightStep*5), float32(minPoint.X+widthStep*i), float32(maxPoint.Y), innerLineWidth, color.White, false)
 	}
+
+	// Draw diagonal lines in both king areas
+	// top
+	vector.StrokeLine(screen, float32(minPoint.X+widthStep*3), float32(minPoint.Y), float32(minPoint.X+widthStep*5), float32(minPoint.Y+heightStep*2), borderLineWidth, color.White, false)
+	vector.StrokeLine(screen, float32(minPoint.X+widthStep*5), float32(minPoint.Y), float32(minPoint.X+widthStep*3), float32(minPoint.Y+heightStep*2), borderLineWidth, color.White, false)
+	// bottom
+	vector.StrokeLine(screen, float32(minPoint.X+widthStep*3), float32(maxPoint.Y), float32(minPoint.X+widthStep*5), float32(maxPoint.Y-heightStep*2), borderLineWidth, color.White, false)
+	vector.StrokeLine(screen, float32(minPoint.X+widthStep*5), float32(maxPoint.Y), float32(minPoint.X+widthStep*3), float32(maxPoint.Y-heightStep*2), borderLineWidth, color.White, false)
 }
 
-func DrawPieces(screen *ebiten.Image, board *Board) {
+func (b *Board) drawPieces(screen *ebiten.Image) {
 	bounds := screen.Bounds()
 	var (
 		// width & height of the windows
@@ -232,19 +104,45 @@ func DrawPieces(screen *ebiten.Image, board *Board) {
 
 	for i := 0; i < 10; i++ { // 10 rows
 		for j := 0; j < 9; j++ { // 9 columns
-			p := board[i][j]
+			p := b.pieceMatrix[i][j]
 			if p == nil {
 				continue
 			}
 
-			img := pieceImageMap[*p]
-			bound := img.Bounds()
-			frameWidth, frameHeight := bound.Max.X-bound.Min.X, bound.Max.Y-bound.Min.Y
+			var img *ebiten.Image
+			if (b.selectedFromPoint != nil) && (*b.selectedFromPoint == image.Point{X: i, Y: j}) {
+				img = pieceImageMap[*p][1]
+			} else {
+				img = pieceImageMap[*p][0]
+			}
+
 			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(-float64(frameWidth/2), -float64(frameHeight/2))
+			op.GeoM.Translate(-float64(imageWidth/2), -float64(imageHeight/2))
 			op.GeoM.Translate(float64(leftMargin+widthStep*j), float64(topMargin+heightStep*i))
 
 			screen.DrawImage(img, op)
 		}
 	}
+}
+
+func (b *Board) drawTimer(screen *ebiten.Image) {
+	timeElapsed := time.Since(b.startTime)
+	durationMsg := timeElapsed.Round(time.Second).String()
+	op := &text.DrawOptions{}
+
+	bounds := screen.Bounds()
+	windowsHeight := bounds.Max.Y - bounds.Min.Y
+	if (b.selfColor == Red && b.isRedTurn) || (b.selfColor == Black && !b.isRedTurn) {
+		// print the timer at the bottom
+		op.GeoM.Translate(10, float64(windowsHeight-30))
+
+	} else {
+		// print the timer at the top
+		op.GeoM.Translate(10, 10)
+	}
+
+	text.Draw(screen, durationMsg, &text.GoTextFace{
+		Source: textFaceSource,
+		Size:   timerFontSize,
+	}, op)
 }

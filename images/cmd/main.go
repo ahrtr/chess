@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image"
 	"image/color"
@@ -12,6 +13,8 @@ import (
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"
+
+	"github.com/ahrtr/chess/fonts"
 )
 
 const (
@@ -49,12 +52,7 @@ var pieces = map[string][]pieceText{
 }
 
 func addText(baseImage *image.RGBA, text string, point image.Point, col color.Color, fontSize float64) error {
-	fontBytes, err := os.ReadFile("font.ttf")
-	if err != nil {
-		return err
-	}
-
-	ttf, err := opentype.Parse(fontBytes)
+	ttf, err := opentype.Parse(fonts.RegularFont)
 	if err != nil {
 		return err
 	}
@@ -86,10 +84,10 @@ func addText(baseImage *image.RGBA, text string, point image.Point, col color.Co
 // drawCircle 使用中点画圆法在 img 上绘制圆形
 func drawCircle(img *image.RGBA, centerX, centerY, radius int, col color.Color) {
 	x, y := 0, radius
-	d := 3 - 2*radius
 
 	putPixel(img, centerX, centerY, x, y, col)
 
+	d := 3 - 2*radius
 	for x <= y {
 		x++
 		if d > 0 {
@@ -99,6 +97,39 @@ func drawCircle(img *image.RGBA, centerX, centerY, radius int, col color.Color) 
 			d += 4*x + 6
 		}
 		putPixel(img, centerX, centerY, x, y, col)
+	}
+}
+
+// drawDashedCircle 使用中点画圆法绘制虚线圆
+func drawDashedCircle(img *image.RGBA, centerX, centerY, radius int, dashLength, gapLength int, col color.Color) {
+	x, y := 0, radius
+	d := 3 - 2*radius
+
+	// 当前绘制的像素计数，用于虚线逻辑
+	isDash := true
+	currentLength := 0
+
+	for x <= y {
+		if isDash {
+			putPixel(img, centerX, centerY, x, y, col)
+		}
+
+		currentLength++
+		if isDash && currentLength >= dashLength {
+			isDash = false
+			currentLength = 0
+		} else if !isDash && currentLength >= gapLength {
+			isDash = true
+			currentLength = 0
+		}
+
+		x++
+		if d > 0 {
+			y--
+			d += 4*(x-y) + 10
+		} else {
+			d += 4*x + 6
+		}
 	}
 }
 
@@ -114,13 +145,17 @@ func putPixel(img *image.RGBA, cx, cy, x, y int, col color.Color) {
 	img.Set(cx-y, cy-x, col)
 }
 
-func createChessPieceImage(piece pieceText, pieceColor color.Color) (*image.RGBA, error) {
+func createChessPieceImage(piece pieceText, pieceColor color.Color, isDash bool) (*image.RGBA, error) {
 	img := image.NewRGBA(image.Rect(0, 0, imageSize, imageSize))
 
 	// fill transparent background
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.Transparent}, image.Point{}, draw.Src)
 
-	drawCircle(img, imageSize/2, imageSize/2, circleRadius, color.Black)
+	if isDash {
+		drawDashedCircle(img, imageSize/2, imageSize/2, circleRadius, 2, 2, color.Black)
+	} else {
+		drawCircle(img, imageSize/2, imageSize/2, circleRadius, color.Black)
+	}
 
 	if err := addText(img, piece.text, image.Point{X: fontX, Y: fontY}, pieceColor, fontSize); err != nil {
 		return nil, fmt.Errorf("error adding text: %w", err)
@@ -149,6 +184,9 @@ func saveImage(img *image.RGBA, filename string) error {
 }
 
 func main() {
+	isDash := flag.Bool("dash", false, "draw piece inside dash circle")
+	flag.Parse()
+
 	for colorName, piecesList := range pieces {
 		for _, piece := range piecesList {
 			var pieceColor color.Color
@@ -159,13 +197,19 @@ func main() {
 			}
 
 			// create an image for each piece
-			img, err := createChessPieceImage(piece, pieceColor)
+			img, err := createChessPieceImage(piece, pieceColor, *isDash)
 			if err != nil {
 				log.Fatalf("Failed to create image for %v, error: %v\n", piece, err)
 			}
 
 			// save the image to a PNG fle
-			filename := fmt.Sprintf("../%s_%s.png", colorName, piece.name)
+			var filename string
+			if *isDash {
+				filename = fmt.Sprintf("../%s_%s_dash.png", colorName, piece.name)
+			} else {
+				filename = fmt.Sprintf("../%s_%s.png", colorName, piece.name)
+			}
+
 			err = saveImage(img, filename)
 			if err != nil {
 				log.Fatalf("Failed to save image %s, error: %v\n", filename, err)

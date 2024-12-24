@@ -3,26 +3,33 @@ package main
 import (
 	"log"
 
-	"github.com/ahrtr/chess/rules"
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/ahrtr/chess/rules"
 )
 
-var chessBoard *rules.Board
+type Game struct {
+	chessBoard *rules.Board
+}
 
-type Game struct{}
+func NewGame() *Game {
+	board, err := rules.NewBoard(rules.Red)
+	if err != nil {
+		log.Fatalf("Failed to create the board: %v", err)
+	}
+
+	return &Game{
+		chessBoard: board,
+	}
+}
 
 func (g *Game) Update() error {
+	g.chessBoard.Update()
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	rules.DrawBoard(screen)
-	rules.DrawPieces(screen, chessBoard)
-
-	/*	drawBoard(screen)
-		for _, p := range pieces {
-			p.Draw(screen)
-		}*/
+	g.chessBoard.Draw(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -30,13 +37,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
-	var err error
-	chessBoard, err = rules.Initialize(rules.Red)
-	if err != nil {
-		log.Fatalf("Failed to initialize the board: %v", err)
-	}
-
-	game := &Game{}
+	game := NewGame()
 	ebiten.SetWindowSize(rules.WindowsWidth, rules.WindowsHeight)
 	ebiten.SetWindowTitle("中国象棋")
 	if err := ebiten.RunGame(game); err != nil {
