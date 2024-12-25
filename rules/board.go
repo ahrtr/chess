@@ -33,6 +33,18 @@ func NewBoard(selfRole PieceColor) (*Board, error) {
 	return newBoard(selfRole), nil
 }
 
+func (b *Board) Clone() *Board {
+	return &Board{
+		selfColor:         b.selfColor,
+		isRedTurn:         b.isRedTurn,
+		mouseDown:         b.mouseDown,
+		targetPt:          &image.Point{X: b.targetPt.X, Y: b.targetPt.Y},
+		selectedFromPoint: &image.Point{X: b.selectedFromPoint.X, Y: b.selectedFromPoint.Y},
+		startTime:         b.startTime,
+		pieceMatrix:       b.pieceMatrix,
+	}
+}
+
 func newBoard(selfRole PieceColor) *Board {
 	// Self is red.
 	// Black pieces are on top and red pieces are at the bottom area.
@@ -208,12 +220,8 @@ func (b *Board) Update() {
 				if b.selectedFromPoint != nil {
 					selectedPiece := b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
 					// check whether it's a valid move.
-					if selectedPiece.canMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
-						b.pieceMatrix[b.targetPt.X][b.targetPt.Y] = b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
-						b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y] = nil
-
-						b.isRedTurn = !b.isRedTurn
-						b.startTime = time.Now()
+					if selectedPiece.validatePieceMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
+						b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y)
 					}
 					b.selectedFromPoint = nil
 				}
@@ -228,12 +236,8 @@ func (b *Board) Update() {
 					if (p.color == Red) != b.isRedTurn {
 						// check whether it's a valid capture.
 						selectedPiece := b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
-						if selectedPiece.canMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
-							b.pieceMatrix[b.targetPt.X][b.targetPt.Y] = b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
-							b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y] = nil
-
-							b.isRedTurn = !b.isRedTurn
-							b.startTime = time.Now()
+						if selectedPiece.validatePieceMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
+							b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y)
 						}
 					}
 					b.selectedFromPoint = nil
@@ -262,4 +266,24 @@ func (b *Board) findTargetPoint(pt image.Point) *image.Point {
 	}
 
 	return nil
+}
+
+func (b *Board) findKing(color PieceColor) image.Point {
+	for i := 0; i <= 9; i++ {
+		for j := 0; j <= 8; j++ {
+			p := b.pieceMatrix[i][j]
+			if p != nil && p.color == color && p.role == RoleKing {
+				return image.Point{X: i, Y: j}
+			}
+		}
+	}
+	panic("can't find the king")
+}
+
+func (b *Board) move(fromX, fromY, toX, toY int) {
+	b.pieceMatrix[toX][toY] = b.pieceMatrix[fromX][fromY]
+	b.pieceMatrix[fromX][fromY] = nil
+
+	b.isRedTurn = !b.isRedTurn
+	b.startTime = time.Now()
 }

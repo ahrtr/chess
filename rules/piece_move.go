@@ -2,6 +2,18 @@ package rules
 
 import "fmt"
 
+// validatePieceMove validates whether it's a valid move.
+//  1. It should follow the rules of chinese chess;
+//  2. The king shouldn't be in danger after the move.
+func (p Piece) validatePieceMove(fromX, fromY, toX, toY int, b *Board) bool {
+	if !p.canMove(fromX, fromY, toX, toY, b) {
+		return false
+	}
+	clonedBoard := b.Clone()
+	clonedBoard.move(fromX, fromY, toX, toY)
+	return !isKingInDanger(clonedBoard, p.color)
+}
+
 // canMove checks whether it's a valid move from [fromX, fromY] to [toX, toY].
 // It doesn't need to care about the color (soldier is an exception, because
 // it can only move forward, not backward). It's already guaranteed that the
@@ -222,4 +234,27 @@ func canSoldierMove(fromX, fromY, toX, toY int, b *Board) bool {
 	}
 
 	return true
+}
+
+// isKingInDanger checks whether the king of the specified color
+// is in danger.
+func isKingInDanger(b *Board, color PieceColor) bool {
+	pt := b.findKing(color)
+
+	fmt.Printf("location of king X: %d, Y: %d, color: %v\n", pt.X, pt.Y, color)
+
+	for i := 0; i <= 9; i++ {
+		for j := 0; j <= 8; j++ {
+			p := b.pieceMatrix[i][j]
+			if p == nil || p.color == color {
+				continue
+			}
+			// If anyone of the opponent's pieces can capture the king,
+			// then it's in danger.
+			if p.canMove(i, j, pt.X, pt.Y, b) {
+				return true
+			}
+		}
+	}
+	return false
 }
