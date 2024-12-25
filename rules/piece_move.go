@@ -4,14 +4,19 @@ import "fmt"
 
 // validatePieceMove validates whether it's a valid move.
 //  1. It should follow the rules of chinese chess;
-//  2. The king shouldn't be in danger after the move.
+//  2. The king of the moving side shouldn't be in danger after the move.
+//  3. The two kings shouldn't be fighting.
 func (p Piece) validatePieceMove(fromX, fromY, toX, toY int, b *Board) bool {
 	if !p.canMove(fromX, fromY, toX, toY, b) {
 		return false
 	}
 	clonedBoard := b.Clone()
 	clonedBoard.move(fromX, fromY, toX, toY)
-	return !isKingInDanger(clonedBoard, p.color)
+	if isKingInDanger(clonedBoard, p.color) {
+		return false
+	}
+
+	return !areKingsFighting(clonedBoard)
 }
 
 // canMove checks whether it's a valid move from [fromX, fromY] to [toX, toY].
@@ -241,8 +246,6 @@ func canSoldierMove(fromX, fromY, toX, toY int, b *Board) bool {
 func isKingInDanger(b *Board, color PieceColor) bool {
 	pt := b.findKing(color)
 
-	fmt.Printf("location of king X: %d, Y: %d, color: %v\n", pt.X, pt.Y, color)
-
 	for i := 0; i <= 9; i++ {
 		for j := 0; j <= 8; j++ {
 			p := b.pieceMatrix[i][j]
@@ -257,4 +260,25 @@ func isKingInDanger(b *Board, color PieceColor) bool {
 		}
 	}
 	return false
+}
+
+// areKingsFighting checks whether the two kings are fighting.
+// They are fighting if they are in the same column and there
+// is no any piece in between.
+func areKingsFighting(b *Board) bool {
+	ptRedKing := b.findKing(Red)
+	ptBlackKing := b.findKing(Black)
+
+	if ptRedKing.Y != ptBlackKing.Y {
+		return false
+	}
+
+	minX, maxX := min(ptRedKing.X, ptBlackKing.X), max(ptRedKing.X, ptBlackKing.X)
+	for i := minX + 1; i < maxX; i++ {
+		if b.pieceMatrix[i][ptRedKing.Y] != nil {
+			return false
+		}
+	}
+
+	return true
 }
