@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -12,8 +14,8 @@ type Game struct {
 	chessBoard *rules.Board
 }
 
-func NewGame() *Game {
-	board, err := rules.NewBoard(rules.Red)
+func NewGame(selfColor rules.PieceColor) *Game {
+	board, err := rules.NewBoard(selfColor)
 	if err != nil {
 		log.Fatalf("Failed to create the board: %v", err)
 	}
@@ -36,8 +38,22 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return outsideWidth, outsideHeight
 }
 
+func selfColor() rules.PieceColor {
+	color := flag.String("color", "red", "decide self color(defaults to red).")
+	flag.Parse()
+	if *color == string(rules.Red) {
+		return rules.Red
+	}
+	if *color == string(rules.Black) {
+		return rules.Black
+	}
+	panic(fmt.Sprintf("invalid color: %s", *color))
+}
+
 func main() {
-	game := NewGame()
+	color := selfColor()
+	game := NewGame(color)
+
 	ebiten.SetWindowSize(rules.WindowsWidth, rules.WindowsHeight)
 	ebiten.SetWindowTitle("中国象棋")
 	if err := ebiten.RunGame(game); err != nil {
