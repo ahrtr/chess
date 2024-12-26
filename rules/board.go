@@ -213,7 +213,7 @@ func (b *Board) Update() {
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		pt := image.Pt(ebiten.CursorPosition())
 
-		targetPt := b.findTargetPoint(pt)
+		targetPt := b.findMouseClickedPoint(pt)
 		if targetPt != nil {
 			b.mouseDown = true
 			b.targetPt = targetPt
@@ -273,7 +273,11 @@ func (b *Board) Update() {
 	}
 }
 
-func (b *Board) findTargetPoint(pt image.Point) *image.Point {
+// findMouseClickedPoint locates the point clicked by the mouse.
+// Note the input parameter is the position of the cursor when
+// mouse being clicked; while the return parameter is the position
+// [row number(0-9): column number(0-8)] on the board.
+func (b *Board) findMouseClickedPoint(pt image.Point) *image.Point {
 	var (
 		// step of rows and columns
 		widthStep, heightStep = (WindowsWidth - leftMargin*2) / 8, (WindowsHeight - topMargin*2) / 9
@@ -293,6 +297,7 @@ func (b *Board) findTargetPoint(pt image.Point) *image.Point {
 	return nil
 }
 
+// findKing returns the position on the board of the king of the specified color.
 func (b *Board) findKing(color PieceColor) image.Point {
 	for i := 0; i <= 9; i++ {
 		for j := 0; j <= 8; j++ {
@@ -344,7 +349,9 @@ func (b *Board) isWinner() bool {
 	}
 
 	// try all the possible valid move, and check whether it can
-	// resolve the danger of the king.
+	// resolve the danger of the king. If the king won't be in
+	// danger anymore after the possible valid move, then no winner
+	// generated yet.
 	for _, r := range allRoutes {
 		clonedBoard := b.Clone()
 		clonedBoard.move(r.from.X, r.from.Y, r.to.X, r.to.Y, false)

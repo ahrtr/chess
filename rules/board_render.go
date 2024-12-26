@@ -43,7 +43,7 @@ func init() {
 func (b *Board) Draw(screen *ebiten.Image) {
 	drawBoard(screen)
 	b.drawPieces(screen)
-	b.drawTimer(screen)
+	b.drawMessage(screen)
 }
 
 func drawBoard(screen *ebiten.Image) {
@@ -131,7 +131,7 @@ func (b *Board) drawPieces(screen *ebiten.Image) {
 	}
 }
 
-func (b *Board) drawTimer(screen *ebiten.Image) {
+func (b *Board) drawMessage(screen *ebiten.Image) {
 	timeElapsed := time.Since(b.startTime)
 	if b.finalTime.After(b.startTime) {
 		timeElapsed = b.finalTime.Sub(b.startTime)
