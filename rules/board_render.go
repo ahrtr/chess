@@ -133,7 +133,14 @@ func (b *Board) drawPieces(screen *ebiten.Image) {
 
 func (b *Board) drawTimer(screen *ebiten.Image) {
 	timeElapsed := time.Since(b.startTime)
-	durationMsg := timeElapsed.Round(time.Second).String()
+	if b.finalTime.After(b.startTime) {
+		timeElapsed = b.finalTime.Sub(b.startTime)
+	}
+	msg := timeElapsed.Round(time.Second).String()
+	if b.finalTime.After(b.startTime) {
+		msg += "  winner!"
+	}
+
 	op := &text.DrawOptions{}
 
 	bounds := screen.Bounds()
@@ -147,7 +154,7 @@ func (b *Board) drawTimer(screen *ebiten.Image) {
 		op.GeoM.Translate(10, 10)
 	}
 
-	text.Draw(screen, durationMsg, &text.GoTextFace{
+	text.Draw(screen, msg, &text.GoTextFace{
 		Source: textFaceSource,
 		Size:   timerFontSize,
 	}, op)

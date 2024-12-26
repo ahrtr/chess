@@ -1,6 +1,14 @@
 package rules
 
-import "fmt"
+import (
+	"fmt"
+	"image"
+)
+
+type route struct {
+	from image.Point
+	to   image.Point
+}
 
 // validatePieceMove validates whether it's a valid move.
 //  1. It should follow the rules of chinese chess;
@@ -11,7 +19,7 @@ func (p Piece) validatePieceMove(fromX, fromY, toX, toY int, b *Board) bool {
 		return false
 	}
 	clonedBoard := b.Clone()
-	clonedBoard.move(fromX, fromY, toX, toY)
+	clonedBoard.move(fromX, fromY, toX, toY, false)
 	if isKingInDanger(clonedBoard, p.color) {
 		return false
 	}
@@ -281,4 +289,24 @@ func areKingsFighting(b *Board) bool {
 	}
 
 	return true
+}
+
+// validMoves returns all valid moves for the piece `p` from `from`.
+func (p Piece) validMoves(b *Board, from image.Point) []route {
+	var routes []route
+	for i := 0; i <= 9; i++ {
+		for j := 0; j <= 8; j++ {
+			curP := b.pieceMatrix[i][j]
+			if curP != nil && curP.color == p.color {
+				continue
+			}
+			if from.X == i && from.Y == j {
+				continue
+			}
+			if p.validatePieceMove(from.X, from.Y, i, j, b) {
+				routes = append(routes, route{from, image.Point{X: i, Y: j}})
+			}
+		}
+	}
+	return routes
 }

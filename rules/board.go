@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"image"
 	"time"
 
@@ -21,6 +22,9 @@ type Board struct {
 	selectedFromPoint *image.Point
 	// What's the start time that the player is allowed to move?
 	startTime time.Time
+	// the time that generates the winner. Once the field is set,
+	// then the game is over.
+	finalTime time.Time
 	// The board has 10 rows, and 9 columns
 	pieceMatrix [10][9]*Piece
 }
@@ -202,6 +206,10 @@ func newBoard(selfRole PieceColor) *Board {
 }
 
 func (b *Board) Update() {
+	if b.isGameFinished() {
+		return
+	}
+
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		pt := image.Pt(ebiten.CursorPosition())
 
@@ -221,7 +229,16 @@ func (b *Board) Update() {
 					selectedPiece := b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
 					// check whether it's a valid move.
 					if selectedPiece.validatePieceMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
-						b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y)
+						color := b.color()
+						clonedBoard := b.Clone()
+						clonedBoard.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
+						if clonedBoard.isWinner() {
+							fmt.Printf("Generated winner: %s\n", color)
+							b.finalTime = time.Now()
+							b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, true)
+						} else {
+							b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
+						}
 					}
 					b.selectedFromPoint = nil
 				}
@@ -237,7 +254,15 @@ func (b *Board) Update() {
 						// check whether it's a valid capture.
 						selectedPiece := b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
 						if selectedPiece.validatePieceMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
-							b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y)
+							color := b.color()
+							clonedBoard := b.Clone()
+							clonedBoard.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
+							if clonedBoard.isWinner() {
+								fmt.Printf("Generated winner: %s\n", color)
+								b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, true)
+							} else {
+								b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
+							}
 						}
 					}
 					b.selectedFromPoint = nil
@@ -280,10 +305,65 @@ func (b *Board) findKing(color PieceColor) image.Point {
 	panic("can't find the king")
 }
 
-func (b *Board) move(fromX, fromY, toX, toY int) {
+func (b *Board) move(fromX, fromY, toX, toY int, final bool) {
 	b.pieceMatrix[toX][toY] = b.pieceMatrix[fromX][fromY]
 	b.pieceMatrix[fromX][fromY] = nil
 
-	b.isRedTurn = !b.isRedTurn
-	b.startTime = time.Now()
+	if final {
+		b.finalTime = time.Now()
+	} else {
+		b.isRedTurn = !b.isRedTurn
+		b.startTime = time.Now()
+	}
+}
+
+// isWinner should be called right after `move`, to check whether
+// the `move` has resulted to a winner.
+func (b *Board) isWinner() bool {
+	color := b.color()
+
+	var allRoutes []route
+	// get all the valid moves of the pieces of the current active player
+	for i := 0; i <= 9; i++ {
+		for j := 0; j <= 8; j++ {
+			p := b.pieceMatrix[i][j]
+			if p == nil || p.color != color {
+				continue
+			}
+			routes := p.validMoves(b, image.Point{X: i, Y: j})
+			allRoutes = append(allRoutes, routes...)
+		}
+	}
+	// No valid routes (困毙)
+	if len(allRoutes) == 0 {
+		return true
+	}
+
+	if !isKingInDanger(b, color) {
+		return false
+	}
+
+	// try all the possible valid move, and check whether it can
+	// resolve the danger of the king.
+	for _, r := range allRoutes {
+		clonedBoard := b.Clone()
+		clonedBoard.move(r.from.X, r.from.Y, r.to.X, r.to.Y, false)
+		if !isKingInDanger(clonedBoard, color) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (b *Board) isGameFinished() bool {
+	return b.finalTime.After(b.startTime)
+}
+
+// `color` returns the color of the current active side.
+func (b *Board) color() PieceColor {
+	if b.isRedTurn {
+		return Red
+	}
+	return Black
 }
