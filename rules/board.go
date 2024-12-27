@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/ahrtr/chess/utils"
 )
 
 type Board struct {
@@ -18,6 +20,7 @@ type Board struct {
 	// Note the point.X is the row number (0-9), and point.Y is the column number (0-8).
 	targetPt *image.Point
 	// The piece on the selected point should be displayed in dash circle.
+	// Note the point.X is the row number (0-9), and point.Y is the column number (0-8).
 	selectedFromPoint *image.Point
 	// What's the start time that the player is allowed to move?
 	startTime time.Time
@@ -37,15 +40,24 @@ func NewBoard(selfRole PieceColor) (*Board, error) {
 }
 
 func (b *Board) Clone() *Board {
-	return &Board{
-		selfColor:         b.selfColor,
-		isRedTurn:         b.isRedTurn,
-		mouseDown:         b.mouseDown,
-		targetPt:          &image.Point{X: b.targetPt.X, Y: b.targetPt.Y},
-		selectedFromPoint: &image.Point{X: b.selectedFromPoint.X, Y: b.selectedFromPoint.Y},
-		startTime:         b.startTime,
-		pieceMatrix:       b.pieceMatrix,
+	clone := &Board{
+		selfColor:   b.selfColor,
+		isRedTurn:   b.isRedTurn,
+		mouseDown:   b.mouseDown,
+		startTime:   b.startTime,
+		pieceMatrix: b.pieceMatrix,
 	}
+	if b.selectedFromPoint != nil {
+		clone.selectedFromPoint = &image.Point{X: b.selectedFromPoint.X, Y: b.selectedFromPoint.Y}
+	}
+	if b.targetPt != nil {
+		clone.targetPt = &image.Point{X: b.targetPt.X, Y: b.targetPt.Y}
+	}
+	return clone
+}
+
+func (b *Board) ResetTimer() {
+	b.startTime = time.Now()
 }
 
 func newBoard(selfRole PieceColor) *Board {
@@ -204,10 +216,13 @@ func newBoard(selfRole PieceColor) *Board {
 	}
 }
 
-func (b *Board) Update() {
+// Update returns true if any piece moves, returns false otherwise.
+func (b *Board) Update() bool {
 	if b.isGameFinished() {
-		return
+		return false
 	}
+
+	moved := false
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		pt := image.Pt(ebiten.CursorPosition())
@@ -236,6 +251,7 @@ func (b *Board) Update() {
 						} else {
 							b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
 						}
+						moved = true
 					}
 					b.selectedFromPoint = nil
 				}
@@ -258,6 +274,7 @@ func (b *Board) Update() {
 							} else {
 								b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
 							}
+							moved = true
 						}
 					}
 					b.selectedFromPoint = nil
@@ -266,6 +283,8 @@ func (b *Board) Update() {
 		}
 		b.mouseDown = false
 	}
+
+	return moved
 }
 
 // findMouseClickedPoint locates the point clicked by the mouse.
@@ -282,7 +301,7 @@ func (b *Board) findMouseClickedPoint(pt image.Point) *image.Point {
 		for j := 0; j < 9; j++ { // 9 columns
 			targetPt := image.Pt(leftMargin+widthStep*j, topMargin+heightStep*i)
 			rect := image.Rect(targetPt.X-imageWidth/2, targetPt.Y-imageHeight/2, targetPt.X+imageWidth/2, targetPt.Y+imageHeight/2)
-			if !isPointInsideRect(pt, rect) {
+			if !utils.IsPointInsideRect(pt, rect) {
 				continue
 			}
 			return &image.Point{X: i, Y: j}

@@ -3,6 +3,8 @@ package rules
 import (
 	"fmt"
 	"image"
+
+	"github.com/ahrtr/chess/utils"
 )
 
 type route struct {
@@ -84,16 +86,16 @@ func canRookMove(fromX, fromY, toX, toY int, b *Board) bool {
 //  1. The route must be an 'L' shape (or 日);
 //  2. The horse's leg is not blocked (no neighbour along the long side).
 func canHorseMove(fromX, fromY, toX, toY int, b *Board) bool {
-	if !(abs(toX-fromX) == 1 && abs(toY-fromY) == 2) &&
-		!(abs(toX-fromX) == 2 && abs(toY-fromY) == 1) {
+	if !(utils.Abs(toX-fromX) == 1 && utils.Abs(toY-fromY) == 2) &&
+		!(utils.Abs(toX-fromX) == 2 && utils.Abs(toY-fromY) == 1) {
 		return false
 	}
-	if abs(toX-fromX) == 2 {
+	if utils.Abs(toX-fromX) == 2 {
 		if b.pieceMatrix[(fromX+toX)/2][fromY] != nil {
 			return false
 		}
 	}
-	if abs(toY-fromY) == 2 {
+	if utils.Abs(toY-fromY) == 2 {
 		if b.pieceMatrix[fromX][(fromY+toY)/2] != nil {
 			return false
 		}
@@ -106,7 +108,7 @@ func canHorseMove(fromX, fromY, toX, toY int, b *Board) bool {
 //  2. The "eye" must not be blocked (the center point of the 田);
 //  3. It can't across the country boarder.
 func canBishopMove(fromX, fromY, toX, toY int, b *Board) bool {
-	if abs(toX-fromX) != 2 || abs(toY-fromY) != 2 {
+	if utils.Abs(toX-fromX) != 2 || utils.Abs(toY-fromY) != 2 {
 		return false
 	}
 	if b.pieceMatrix[(fromX+toX)/2][(fromY+toY)/2] != nil {
@@ -122,7 +124,7 @@ func canBishopMove(fromX, fromY, toX, toY int, b *Board) bool {
 //  1. The guard can only move within its own 3*3 grid (九宫格) near the King;
 //  2. It moves diagonally by one step at a time.
 func canGuardMove(fromX, fromY, toX, toY int, b *Board) bool {
-	if abs(toX-fromX) != 1 || abs(toY-fromY) != 1 {
+	if utils.Abs(toX-fromX) != 1 || utils.Abs(toY-fromY) != 1 {
 		return false
 	}
 	if fromY < 3 || fromY > 5 || toY < 3 || toY > 5 {
@@ -138,7 +140,7 @@ func canGuardMove(fromX, fromY, toX, toY int, b *Board) bool {
 //  1. The king can only move within its own 3*3 grid (九宫格);
 //  2. It moves horizontally or vertically by one step at a time.
 func canKingMove(fromX, fromY, toX, toY int, b *Board) bool {
-	if !(fromX == toX && abs(toY-fromY) == 1) && !(fromY == toY && abs(toX-fromX) == 1) {
+	if !(fromX == toX && utils.Abs(toY-fromY) == 1) && !(fromY == toY && utils.Abs(toX-fromX) == 1) {
 		return false
 	}
 	if fromY < 3 || fromY > 5 || toY < 3 || toY > 5 {
@@ -213,7 +215,7 @@ func canCannonMove(fromX, fromY, toX, toY int, b *Board) bool {
 //     horizontal move isn't allowed inside its own country.
 //  2. It can only move forward, not backward.
 func canSoldierMove(fromX, fromY, toX, toY int, b *Board) bool {
-	if !(fromX == toX && abs(toY-fromY) == 1) && !(fromY == toY && abs(toX-fromX) == 1) {
+	if !(fromX == toX && utils.Abs(toY-fromY) == 1) && !(fromY == toY && utils.Abs(toX-fromX) == 1) {
 		return false
 	}
 

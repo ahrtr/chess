@@ -19,7 +19,7 @@ const (
 	WindowsHeight = 840
 
 	leftMargin = 40
-	topMargin  = 60
+	topMargin  = 80
 
 	borderLineWidth = 2.0
 	innerLineWidth  = 1.0
