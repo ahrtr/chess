@@ -12,11 +12,23 @@ import (
 	"github.com/ahrtr/chess/ui"
 )
 
-var history []*rules.Board
+const (
+	buttonX0    = 128
+	buttonWidth = 96
+	buttonGap   = 12
+	buttonY0    = 12
+	buttonY1    = 48
+)
+
+var (
+	history        []*rules.Board
+	historyPointer = -1
+)
 
 type Game struct {
 	chessBoard *rules.Board
 	undoButton *ui.Button
+	redoButton *ui.Button
 }
 
 func NewGame(selfColor rules.PieceColor) *Game {
@@ -27,11 +39,15 @@ func NewGame(selfColor rules.PieceColor) *Game {
 
 	g := &Game{
 		chessBoard: board,
-		undoButton: ui.NewButton(image.Rect(128, 12, 224, 48), "Undo", nil),
+		undoButton: ui.NewButton(image.Rect(buttonX0, buttonY0, buttonX0+buttonWidth, buttonY1), "Undo", nil),
+		redoButton: ui.NewButton(image.Rect(buttonX0+buttonWidth+buttonGap, buttonY0, buttonX0+buttonWidth*2+buttonGap, buttonY1), "Redo", nil),
 	}
 	g.backup()
 	g.undoButton.SetOnClick(func(_ *ui.Button) {
 		g.undo()
+	})
+	g.redoButton.SetOnClick(func(_ *ui.Button) {
+		g.redo()
 	})
 
 	return g
@@ -39,16 +55,31 @@ func NewGame(selfColor rules.PieceColor) *Game {
 
 func (g *Game) backup() {
 	clone := g.chessBoard.Clone()
+	if len(history) != historyPointer-1 {
+		history = history[:(historyPointer + 1)]
+	}
 	history = append(history, clone)
+	historyPointer = len(history) - 1
 }
 
 func (g *Game) undo() {
-	if len(history) > 1 {
-		history = history[:(len(history) - 1)]
-		clone := history[len(history)-1].Clone()
-		clone.ResetTimer()
-		g.chessBoard = clone
+	if historyPointer > 0 {
+		historyPointer--
+		g.historyOperation()
 	}
+}
+
+func (g *Game) redo() {
+	if historyPointer < len(history)-1 {
+		historyPointer++
+		g.historyOperation()
+	}
+}
+
+func (g *Game) historyOperation() {
+	clone := history[historyPointer].Clone()
+	clone.ResetTimer()
+	g.chessBoard = clone
 }
 
 func (g *Game) Update() error {
@@ -56,12 +87,14 @@ func (g *Game) Update() error {
 		g.backup()
 	}
 	g.undoButton.Update()
+	g.redoButton.Update()
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.chessBoard.Draw(screen)
 	g.undoButton.Draw(screen)
+	g.redoButton.Draw(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
