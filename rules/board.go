@@ -1,7 +1,6 @@
 package rules
 
 import (
-	"fmt"
 	"image"
 	"time"
 
@@ -229,11 +228,9 @@ func (b *Board) Update() {
 					selectedPiece := b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
 					// check whether it's a valid move.
 					if selectedPiece.validatePieceMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
-						color := b.color()
 						clonedBoard := b.Clone()
 						clonedBoard.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
 						if clonedBoard.isWinner() {
-							fmt.Printf("Generated winner: %s\n", color)
 							b.finalTime = time.Now()
 							b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, true)
 						} else {
@@ -254,11 +251,9 @@ func (b *Board) Update() {
 						// check whether it's a valid capture.
 						selectedPiece := b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
 						if selectedPiece.validatePieceMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
-							color := b.color()
 							clonedBoard := b.Clone()
 							clonedBoard.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
 							if clonedBoard.isWinner() {
-								fmt.Printf("Generated winner: %s\n", color)
 								b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, true)
 							} else {
 								b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
