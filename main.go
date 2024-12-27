@@ -20,15 +20,13 @@ const (
 	buttonY1    = 48
 )
 
-var (
-	history        []*rules.Board
-	historyPointer = -1
-)
-
 type Game struct {
 	chessBoard *rules.Board
 	undoButton *ui.Button
 	redoButton *ui.Button
+
+	history        []*rules.Board
+	historyPointer int
 }
 
 func NewGame(selfColor rules.PieceColor) *Game {
@@ -41,6 +39,9 @@ func NewGame(selfColor rules.PieceColor) *Game {
 		chessBoard: board,
 		undoButton: ui.NewButton(image.Rect(buttonX0, buttonY0, buttonX0+buttonWidth, buttonY1), "Undo", nil),
 		redoButton: ui.NewButton(image.Rect(buttonX0+buttonWidth+buttonGap, buttonY0, buttonX0+buttonWidth*2+buttonGap, buttonY1), "Redo", nil),
+
+		history:        nil,
+		historyPointer: -1,
 	}
 	g.backup()
 	g.undoButton.SetOnClick(func(_ *ui.Button) {
@@ -55,29 +56,29 @@ func NewGame(selfColor rules.PieceColor) *Game {
 
 func (g *Game) backup() {
 	clone := g.chessBoard.Clone()
-	if len(history) != historyPointer-1 {
-		history = history[:(historyPointer + 1)]
+	if len(g.history) != g.historyPointer-1 {
+		g.history = g.history[:(g.historyPointer + 1)]
 	}
-	history = append(history, clone)
-	historyPointer = len(history) - 1
+	g.history = append(g.history, clone)
+	g.historyPointer = len(g.history) - 1
 }
 
 func (g *Game) undo() {
-	if historyPointer > 0 {
-		historyPointer--
+	if g.historyPointer > 0 {
+		g.historyPointer--
 		g.historyOperation()
 	}
 }
 
 func (g *Game) redo() {
-	if historyPointer < len(history)-1 {
-		historyPointer++
+	if g.historyPointer < len(g.history)-1 {
+		g.historyPointer++
 		g.historyOperation()
 	}
 }
 
 func (g *Game) historyOperation() {
-	clone := history[historyPointer].Clone()
+	clone := g.history[g.historyPointer].Clone()
 	clone.ResetTimer()
 	g.chessBoard = clone
 }
