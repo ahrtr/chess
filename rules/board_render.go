@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"time"
@@ -22,7 +23,8 @@ const (
 	borderLineWidth = 2.0
 	innerLineWidth  = 1.0
 
-	timerFontSize = 16
+	msgFontSize     = 16
+	msgBottomMargin = 35
 )
 
 var (
@@ -121,6 +123,11 @@ func (b *Board) drawPieces(screen *ebiten.Image) {
 }
 
 func (b *Board) drawMessage(screen *ebiten.Image) {
+	b.drawTimerAndWinner(screen)
+	b.drawHintFromAI(screen)
+}
+
+func (b *Board) drawTimerAndWinner(screen *ebiten.Image) {
 	timeElapsed := time.Since(b.startTime)
 	if b.finalTime.After(b.startTime) {
 		timeElapsed = b.finalTime.Sub(b.startTime)
@@ -136,7 +143,7 @@ func (b *Board) drawMessage(screen *ebiten.Image) {
 	windowsHeight := bounds.Max.Y - bounds.Min.Y
 	if (b.selfColor == Red && b.isRedTurn) || (b.selfColor == Black && !b.isRedTurn) {
 		// print the timer at the bottom
-		op.GeoM.Translate(10, float64(windowsHeight-30))
+		op.GeoM.Translate(10, float64(windowsHeight-msgBottomMargin))
 
 	} else {
 		// print the timer at the top
@@ -145,6 +152,31 @@ func (b *Board) drawMessage(screen *ebiten.Image) {
 
 	text.Draw(screen, msg, &text.GoTextFace{
 		Source: fonts.TextFaceSource,
-		Size:   timerFontSize,
+		Size:   msgFontSize,
+	}, op)
+}
+
+func (b *Board) drawHintFromAI(screen *ebiten.Image) {
+	if !b.isAIWorking && len(b.hintFromAI) == 0 {
+		return
+	}
+
+	var msg string
+	if b.isAIWorking {
+		timeElapsed := time.Since(b.aiStartTime).Round(time.Second)
+		msg = fmt.Sprintf("The AI is thinking... %s", timeElapsed.String())
+	} else {
+		timeElapsed := b.aiStopTime.Sub(b.aiStartTime).Round(time.Second)
+		msg = fmt.Sprintf("%s, took: %s", b.hintFromAI, timeElapsed.String())
+	}
+
+	bounds := screen.Bounds()
+	windowsHeight := bounds.Max.Y - bounds.Min.Y
+
+	op := &text.DrawOptions{}
+	op.GeoM.Translate(128, float64(windowsHeight-msgBottomMargin))
+	text.Draw(screen, msg, &text.GoTextFace{
+		Source: fonts.TextFaceSource,
+		Size:   msgFontSize,
 	}, op)
 }

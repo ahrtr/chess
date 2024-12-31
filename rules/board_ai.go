@@ -1,5 +1,25 @@
 package rules
 
+import "time"
+
+func (b *Board) StartAI() {
+	b.isAIWorking = true
+	b.aiStartTime = time.Now()
+}
+
+func (b *Board) StopAI(hint string) {
+	b.isAIWorking = false
+	b.hintFromAI = hint
+	b.aiStopTime = time.Now()
+}
+
+func (b *Board) resetAI() {
+	b.isAIWorking = false
+	b.hintFromAI = ""
+	b.aiStartTime = time.Now()
+	b.aiStopTime = time.Now()
+}
+
 func (b *Board) GetBestMove(depth int) Move {
 	var (
 		bestMove  Move

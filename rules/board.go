@@ -28,6 +28,13 @@ type Board struct {
 	// the time that generates the winner. Once the field is set,
 	// then the game is over.
 	finalTime time.Time
+	// the hint from the AI
+	hintFromAI string
+	// whether the AI is working
+	isAIWorking bool
+	// the time when the AI starts to work
+	aiStartTime time.Time
+	aiStopTime  time.Time
 	// The board has 10 rows, and 9 columns
 	pieceMatrix [10][9]*Piece
 }
@@ -315,6 +322,7 @@ func (b *Board) findKing(color PieceColor) image.Point {
 func (b *Board) move(fromX, fromY, toX, toY int, checkWinner bool) {
 	b.pieceMatrix[toX][toY] = b.pieceMatrix[fromX][fromY]
 	b.pieceMatrix[fromX][fromY] = nil
+	b.resetAI()
 
 	if checkWinner {
 		cloneBoard := b.Clone()

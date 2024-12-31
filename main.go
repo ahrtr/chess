@@ -25,7 +25,8 @@ type Game struct {
 	undoButton *ui.Button
 	redoButton *ui.Button
 
-	hintButton *ui.Button
+	hintButton   *ui.Button
+	isAIThinking bool
 
 	history        []*rules.Board
 	historyPointer int
@@ -53,6 +54,10 @@ func NewGame(selfColor rules.PieceColor) *Game {
 	})
 	g.redoButton.SetOnClick(func(_ *ui.Button) {
 		g.redo()
+	})
+
+	g.hintButton.SetOnClick(func(_ *ui.Button) {
+		g.aiRun()
 	})
 
 	return g
@@ -87,7 +92,36 @@ func (g *Game) historyOperation() {
 	g.chessBoard = clone
 }
 
+func (g *Game) aiRun() {
+	if g.isAIThinking {
+		return
+	}
+
+	g.isAIThinking = true
+	g.chessBoard.StartAI()
+
+	// let's do it async
+	go func() {
+		defer func() {
+			g.isAIThinking = false
+		}()
+
+		cloneBoard := g.chessBoard.Clone()
+		// Performance history:
+		//   1. 2024-12-31 depth = 4, took 1m30s
+		//      Very basic minimax algorithm with alpha-beta pruning improvement.
+		bestMove := cloneBoard.GetBestMove(4)
+
+		g.chessBoard.StopAI(fmt.Sprintf("Best move: %s", bestMove.String()))
+	}()
+}
+
 func (g *Game) Update() error {
+	// do nothing when the AI is thinking
+	if g.isAIThinking {
+		return nil
+	}
+
 	if g.chessBoard.Update() {
 		g.backup()
 	}
