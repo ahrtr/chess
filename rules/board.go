@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"image"
 	"time"
 
@@ -308,7 +309,7 @@ func (b *Board) findKing(color PieceColor) image.Point {
 			}
 		}
 	}
-	panic("can't find the king")
+	panic(fmt.Sprintf("can't find the king: %s", color))
 }
 
 func (b *Board) move(fromX, fromY, toX, toY int, checkWinner bool) {
@@ -316,11 +317,17 @@ func (b *Board) move(fromX, fromY, toX, toY int, checkWinner bool) {
 	b.pieceMatrix[fromX][fromY] = nil
 
 	if checkWinner {
-		if b.isWinner() {
+		cloneBoard := b.Clone()
+		cloneBoard.switchPlayer()
+		if cloneBoard.isWinner() {
 			b.finalTime = time.Now()
 			return
 		}
 	}
+	b.switchPlayer()
+}
+
+func (b *Board) switchPlayer() {
 	b.isRedTurn = !b.isRedTurn
 	b.startTime = time.Now()
 }
