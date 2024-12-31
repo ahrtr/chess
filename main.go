@@ -25,6 +25,8 @@ type Game struct {
 	undoButton *ui.Button
 	redoButton *ui.Button
 
+	hintButton *ui.Button
+
 	history        []*rules.Board
 	historyPointer int
 }
@@ -38,7 +40,9 @@ func NewGame(selfColor rules.PieceColor) *Game {
 	g := &Game{
 		chessBoard: board,
 		undoButton: ui.NewButton(image.Rect(buttonX0, buttonY0, buttonX0+buttonWidth, buttonY1), "Undo", nil),
-		redoButton: ui.NewButton(image.Rect(buttonX0+buttonWidth+buttonGap, buttonY0, buttonX0+buttonWidth*2+buttonGap, buttonY1), "Redo", nil),
+		redoButton: ui.NewButton(image.Rect(buttonX0+(buttonWidth+buttonGap)*1, buttonY0, buttonX0+(buttonWidth+buttonGap)*1+buttonWidth, buttonY1), "Redo", nil),
+
+		hintButton: ui.NewButton(image.Rect(buttonX0+(buttonWidth+buttonGap)*2, buttonY0, buttonX0+(buttonWidth+buttonGap)*2+buttonWidth, buttonY1), "Hint", nil),
 
 		history:        nil,
 		historyPointer: -1,
@@ -89,6 +93,7 @@ func (g *Game) Update() error {
 	}
 	g.undoButton.Update()
 	g.redoButton.Update()
+	g.hintButton.Update()
 	return nil
 }
 
@@ -96,6 +101,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.chessBoard.Draw(screen)
 	g.undoButton.Draw(screen)
 	g.redoButton.Draw(screen)
+	g.hintButton.Draw(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {

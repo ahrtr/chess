@@ -7,9 +7,22 @@ import (
 	"github.com/ahrtr/chess/utils"
 )
 
+type Move struct {
+	Piece
+	route
+}
+
 type route struct {
 	from image.Point
 	to   image.Point
+}
+
+func (r route) String() string {
+	return fmt.Sprintf("%s --> %s", r.from.String(), r.to.String())
+}
+
+func (m Move) String() string {
+	return fmt.Sprintf("%s, %s ", m.Piece.String(), m.route.String())
 }
 
 // validatePieceMove validates whether it's a valid move.

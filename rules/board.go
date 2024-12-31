@@ -218,7 +218,7 @@ func newBoard(selfRole PieceColor) *Board {
 
 // Update returns true if any piece moves, returns false otherwise.
 func (b *Board) Update() bool {
-	if b.isGameFinished() {
+	if b.isGameOver() {
 		return false
 	}
 
@@ -243,14 +243,7 @@ func (b *Board) Update() bool {
 					selectedPiece := b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
 					// check whether it's a valid move.
 					if selectedPiece.validatePieceMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
-						clonedBoard := b.Clone()
-						clonedBoard.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
-						if clonedBoard.isWinner() {
-							b.finalTime = time.Now()
-							b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, true)
-						} else {
-							b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
-						}
+						b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, true)
 						moved = true
 					}
 					b.selectedFromPoint = nil
@@ -267,13 +260,7 @@ func (b *Board) Update() bool {
 						// check whether it's a valid capture.
 						selectedPiece := b.pieceMatrix[b.selectedFromPoint.X][b.selectedFromPoint.Y]
 						if selectedPiece.validatePieceMove(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, b) {
-							clonedBoard := b.Clone()
-							clonedBoard.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
-							if clonedBoard.isWinner() {
-								b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, true)
-							} else {
-								b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, false)
-							}
+							b.move(b.selectedFromPoint.X, b.selectedFromPoint.Y, b.targetPt.X, b.targetPt.Y, true)
 							moved = true
 						}
 					}
@@ -324,24 +311,24 @@ func (b *Board) findKing(color PieceColor) image.Point {
 	panic("can't find the king")
 }
 
-func (b *Board) move(fromX, fromY, toX, toY int, final bool) {
+func (b *Board) move(fromX, fromY, toX, toY int, checkWinner bool) {
 	b.pieceMatrix[toX][toY] = b.pieceMatrix[fromX][fromY]
 	b.pieceMatrix[fromX][fromY] = nil
 
-	if final {
-		b.finalTime = time.Now()
-	} else {
-		b.isRedTurn = !b.isRedTurn
-		b.startTime = time.Now()
+	if checkWinner {
+		if b.isWinner() {
+			b.finalTime = time.Now()
+			return
+		}
 	}
+	b.isRedTurn = !b.isRedTurn
+	b.startTime = time.Now()
 }
 
-// isWinner should be called right after `move`, to check whether
-// the `move` has resulted to a winner.
-func (b *Board) isWinner() bool {
+func (b *Board) validMoves() []Move {
 	color := b.color()
 
-	var allRoutes []route
+	var allRoutes []Move
 	// get all the valid moves of the pieces of the current active player
 	for i := 0; i <= 9; i++ {
 		for j := 0; j <= 8; j++ {
@@ -350,14 +337,25 @@ func (b *Board) isWinner() bool {
 				continue
 			}
 			routes := p.validMoves(b, image.Point{X: i, Y: j})
-			allRoutes = append(allRoutes, routes...)
+			for _, r := range routes {
+				allRoutes = append(allRoutes, Move{Piece: *p, route: r})
+			}
 		}
 	}
+
+	return allRoutes
+}
+
+// isWinner should be called right after `move`, to check whether
+// the `move` has resulted to a winner.
+func (b *Board) isWinner() bool {
+	allRoutes := b.validMoves()
 	// No valid routes (困毙)
 	if len(allRoutes) == 0 {
 		return true
 	}
 
+	color := b.color()
 	if !isKingInDanger(b, color) {
 		return false
 	}
@@ -368,6 +366,8 @@ func (b *Board) isWinner() bool {
 	// generated yet.
 	for _, r := range allRoutes {
 		clonedBoard := b.Clone()
+		// The last parameter must be `false`, otherwise it will lead to
+		// indefinite recursion.
 		clonedBoard.move(r.from.X, r.from.Y, r.to.X, r.to.Y, false)
 		if !isKingInDanger(clonedBoard, color) {
 			return false
@@ -377,7 +377,7 @@ func (b *Board) isWinner() bool {
 	return true
 }
 
-func (b *Board) isGameFinished() bool {
+func (b *Board) isGameOver() bool {
 	return b.finalTime.After(b.startTime)
 }
 

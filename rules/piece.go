@@ -1,5 +1,7 @@
 package rules
 
+import "fmt"
+
 type PieceRole string
 
 const (
@@ -22,4 +24,8 @@ const (
 type Piece struct {
 	color PieceColor
 	role  PieceRole
+}
+
+func (p Piece) String() string {
+	return fmt.Sprintf("(%s, %s)", p.color, p.role)
 }
