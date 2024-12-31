@@ -3,13 +3,8 @@ package ui
 import (
 	"bytes"
 	_ "embed"
-	"image"
-	"log"
-
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
-
-	"github.com/ahrtr/chess/fonts"
+	"image"
 )
 
 const (
@@ -22,8 +17,7 @@ var (
 )
 
 var (
-	uiImage      *ebiten.Image
-	uiFaceSource *text.GoTextFaceSource
+	uiImage *ebiten.Image
 )
 
 func init() {
@@ -33,11 +27,4 @@ func init() {
 		panic(err)
 	}
 	uiImage = ebiten.NewImageFromImage(img)
-
-	// initialize uiFaceSource
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(fonts.RegularFont))
-	if err != nil {
-		log.Fatal(err)
-	}
-	uiFaceSource = s
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
+	"github.com/ahrtr/chess/fonts"
 	"github.com/ahrtr/chess/utils"
 )
 
@@ -78,7 +79,7 @@ func (b *Button) Draw(dst *ebiten.Image) {
 	op.PrimaryAlign = text.AlignCenter
 	op.SecondaryAlign = text.AlignCenter
 	text.Draw(dst, b.text, &text.GoTextFace{
-		Source: uiFaceSource,
+		Source: fonts.TextFaceSource,
 		Size:   uiFontSize,
 	}, op)
 }

@@ -1,8 +1,6 @@
 package rules
 
 import (
-	"bytes"
-	"fmt"
 	"image"
 	"image/color"
 	"time"
@@ -29,16 +27,7 @@ const (
 
 var (
 	boardBackgroundColor = color.RGBA{R: 0xbb, G: 0xad, B: 0xa0, A: 0xff}
-	textFaceSource       *text.GoTextFaceSource
 )
-
-func init() {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(fonts.RegularFont))
-	if err != nil {
-		panic(fmt.Sprintf("error loading font: %v", err))
-	}
-	textFaceSource = s
-}
 
 func (b *Board) Draw(screen *ebiten.Image) {
 	drawBoard(screen)
@@ -155,7 +144,7 @@ func (b *Board) drawMessage(screen *ebiten.Image) {
 	}
 
 	text.Draw(screen, msg, &text.GoTextFace{
-		Source: textFaceSource,
+		Source: fonts.TextFaceSource,
 		Size:   timerFontSize,
 	}, op)
 }
